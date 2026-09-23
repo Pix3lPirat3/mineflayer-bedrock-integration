@@ -1,0 +1,6 @@
+# The umbrella tracks only its own files + the submodule pins (.gitmodules + gitlinks).
+# Submodule working trees, their node_modules, and bootstrap-created links are never committed here.
+node_modules/
+deps/*/node_modules/
+npm-debug.log*
+.DS_Store

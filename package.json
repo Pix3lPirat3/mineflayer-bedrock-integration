@@ -1,0 +1,11 @@
+{
+  "name": "mineflayer-bedrock-integration",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Experimentation umbrella: mineflayer Bedrock adapter + its bedrock dependency branches as pinned submodules (not a PR target)",
+  "scripts": {
+    "bootstrap": "node scripts/bootstrap.mjs",
+    "bump": "git submodule update --remote && npm run bootstrap"
+  },
+  "license": "MIT"
+}
