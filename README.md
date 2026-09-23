@@ -56,9 +56,13 @@ npm run bootstrap          # re-links + regenerates the data index
 git commit -am "bump minecraft-data to <short-sha>"
 ```
 
-## Validation reference
+## Validation
 
-The pinned combination was exercised on this machine via the bedrock harness (`prismarine-workspace/tools/bedrock-harness`):
-version matrix `world=Y` across 1.17.10 -> 1.26.45 (hashed span included), and the functional suite passing on the RakNet
-1.26.45 path and the 1.26.51 NetherNet path. See `reviews/BEDROCK-PR-VALIDATION-ROADMAP-2026-09-23.md` and
-`reviews/parity-suite-failure-triage-2026-09-23.md` in the workspace.
+Validated 2026-09-23 against the branch tips this repo pins:
+- **Version matrix 5/5**: connect/spawn/world/inventory/move across 1.17.10, 1.19.80, 1.20.80, 1.21.90, 1.26.45 (with #1327).
+- **Functional suite 347 pass / 0 fail / 1 skip** on the RakNet 1.26.45 fresh-world path.
+- **Assembled-umbrella smoke** (`smoke.cjs`, this exact bootstrap output) on 1.19.80: world decodes to a solid floor
+  (grass/dirt/dirt/bedrock), `diamond_pickaxe.maxDurability=1561` from #1327 data, movement works.
+
+`smoke.cjs` connects the assembled adapter to a local Bedrock server on port 19161 (`SMOKEV=<version> node smoke.cjs`) - a
+quick end-to-end check after `npm run bootstrap`. This repo tracks branch tips, so re-run the checks after a `bump`.

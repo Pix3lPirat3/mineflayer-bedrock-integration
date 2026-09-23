@@ -1,10 +1,18 @@
 #!/usr/bin/env node
 // Bootstrap the mineflayer-bedrock-integration umbrella into a runnable state.
-// DRAFT (2026-09-23): mirrors the local worktree+junction wiring we use in prismarine-workspace, made cross-platform via
-// directory symlinks (junctions on Windows). Run after `git clone --recurse-submodules`. Not yet exercised end-to-end from
-// a fresh clone - treat the link/regenerate steps as the pieces to verify first when the real repo exists.
+//
+// Design (mirrors the junction setup that works in prismarine-workspace, made portable): one root `npm install` pulls
+// mineflayer (file: submodule) + its whole dependency tree, HOISTED into the umbrella's root node_modules. We then replace
+// the released copies of the bedrock packages in root node_modules with directory links to the submodule forks. Because
+// Node resolves node_modules by walking UP, every consumer - the adapter AND transitive users like
+// prismarine-registry -> minecraft-data - resolves the fork from root node_modules. (npm `overrides` with file: targets
+// would be cleaner but currently crashes npm on the prismarine-biome/recipe peer deps.)
+//
+// The one thing links can't express is node-minecraft-data's DATA (a git submodule of the wrapper, not an npm dep): link
+// zuri's #1327 data in and re-run generate:data (a plain file swap leaves the wrapper's generated index on the old layout).
+// Run after `git clone --recurse-submodules`.
 import { execSync } from 'node:child_process'
-import { existsSync, rmSync, symlinkSync, statSync, lstatSync } from 'node:fs'
+import { existsSync, rmSync, symlinkSync, lstatSync, mkdirSync } from 'node:fs'
 import { join, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -12,40 +20,47 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const DEPS = join(ROOT, 'deps')
 const run = (cmd, cwd) => { console.log(`$ ${cmd}  (in ${relative(ROOT, cwd) || '.'})`); execSync(cmd, { cwd, stdio: 'inherit' }) }
 const isWin = process.platform === 'win32'
+const lstatSafe = (p) => { try { return lstatSync(p) } catch { return null } }
 
-// Replace `linkPath` with a directory link to `target` (junction on Windows, dir symlink elsewhere). Idempotent.
 function linkDir (target, linkPath) {
   if (!existsSync(target)) throw new Error(`link target missing: ${target}`)
-  try { if (existsSync(linkPath) || lstatSyncSafe(linkPath)) rmSync(linkPath, { recursive: true, force: true }) } catch {}
+  if (lstatSafe(linkPath)) rmSync(linkPath, { recursive: true, force: true })
   symlinkSync(target, linkPath, isWin ? 'junction' : 'dir')
   console.log(`  linked ${relative(ROOT, linkPath)} -> ${relative(ROOT, target)}`)
 }
-function lstatSyncSafe (p) { try { return lstatSync(p) } catch { return null } }
 
-// 1) submodules
-run('git submodule update --init --recursive', ROOT)
-
-// 2) install each submodule's own deps (skip scripts we run explicitly; --no-audit for speed)
-for (const m of ['bedrock-protocol', 'prismarine-chunk', 'prismarine-physics', 'prismarine-registry', 'node-minecraft-data', 'mineflayer']) {
-  const dir = join(DEPS, m)
-  if (existsSync(join(dir, 'package.json'))) run('npm install --no-audit --no-fund', dir)
+// package name (in root node_modules) -> submodule providing the fork
+const FORKS = {
+  'prismarine-chunk': 'prismarine-chunk',
+  'minecraft-data': 'node-minecraft-data', // the wrapper (its data is linked to zuri's #1327 below)
+  'bedrock-protocol': 'bedrock-protocol',
+  'prismarine-physics': 'prismarine-physics',
+  'prismarine-registry': 'prismarine-registry'
 }
 
-// 3) data: point the node-minecraft-data wrapper's data at zuri's #1327 submodule, then REGENERATE the index.
-//    (A plain file swap is not enough - data.js bakes in the previous dataPaths layout.)
+// 1) submodules (NON-recursive: node-minecraft-data's nested minecraft-data submodule points at UPSTREAM data; step 2 links
+//    zuri's #1327 in instead).
+run('git submodule update --init', ROOT)
+
+// 2) link zuri's #1327 data into the node-minecraft-data wrapper BEFORE any generate:data runs.
 linkDir(join(DEPS, 'minecraft-data'), join(DEPS, 'node-minecraft-data', 'minecraft-data'))
-run('npm run generate:data', join(DEPS, 'node-minecraft-data'))
 
-// 4) link the adapter's dependencies to the sibling submodules so require() resolves the bedrock forks, not npm releases.
-const MF_NM = join(DEPS, 'mineflayer', 'node_modules')
-const links = {
-  'prismarine-chunk': join(DEPS, 'prismarine-chunk'),
-  'minecraft-data': join(DEPS, 'node-minecraft-data'), // the wrapper (already linked to zuri's data + regenerated)
-  'bedrock-protocol': join(DEPS, 'bedrock-protocol'),
-  'prismarine-physics': join(DEPS, 'prismarine-physics'),
-  'prismarine-registry': join(DEPS, 'prismarine-registry')
+// 3) drop any stale per-submodule node_modules so the root install is the single source of truth.
+for (const m of [...new Set(Object.values(FORKS)), 'mineflayer']) {
+  const nm = join(DEPS, m, 'node_modules'); if (existsSync(nm)) { rmSync(nm, { recursive: true, force: true }); console.log(`  cleaned ${relative(ROOT, nm)}`) }
 }
-for (const [name, target] of Object.entries(links)) linkDir(target, join(MF_NM, name))
+
+// 4) one root install: mineflayer (file:) + its whole tree, released versions, hoisted into root node_modules.
+//    --ignore-scripts so node-minecraft-data's prepare (generate:data) does not run before we regenerate it below.
+run('npm install --no-audit --no-fund --ignore-scripts', ROOT)
+
+// 5) replace the released bedrock packages in root node_modules with links to the forks (resolved tree-wide by walk-up).
+const NM = join(ROOT, 'node_modules')
+if (!existsSync(NM)) mkdirSync(NM)
+for (const [name, sub] of Object.entries(FORKS)) linkDir(join(DEPS, sub), join(NM, name))
+
+// 6) regenerate the wrapper index against zuri's data (root node_modules/minecraft-data now links the fork wrapper).
+run('npm run generate:data', join(NM, 'minecraft-data'))
 
 console.log('\nBootstrap complete. Sanity check:')
-console.log("  node -e \"const mf=require('./deps/mineflayer'); console.log('mineflayer bedrock adapter loaded')\"")
+console.log("  node -e \"const mf=require('mineflayer'); console.log('adapter loaded:', typeof mf.createBot==='function')\"")

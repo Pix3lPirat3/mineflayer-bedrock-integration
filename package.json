@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "description": "Experimentation umbrella: mineflayer Bedrock adapter + its bedrock dependency branches as pinned submodules (not a PR target)",
+  "dependencies": {
+    "mineflayer": "file:deps/mineflayer"
+  },
   "scripts": {
     "bootstrap": "node scripts/bootstrap.mjs",
     "bump": "git submodule update --remote && npm run bootstrap"
