@@ -14,15 +14,14 @@ several forks (ours, mc-zuri's #1327, and others) that are not yet merged upstre
 |------|------|--------|------|
 | `deps/mineflayer` | Pix3lPirat3/mineflayer | `feat/bedrock-edition-adapter` | the bedrock adapter (bedrock_plugins) |
 | `deps/prismarine-chunk` | Pix3lPirat3/prismarine-chunk | `feat/bedrock-1.26-chunks` | bedrock chunk/subchunk decode |
-| `deps/node-minecraft-data` | Pix3lPirat3/node-minecraft-data | pin `d449f39` | data wrapper (consumes the data repo) |
+| `deps/node-minecraft-data` | Pix3lPirat3/node-minecraft-data | `feat/bedrock` | data wrapper (consumes the data repo) |
 | `deps/minecraft-data` | mc-zuri/minecraft-data | `bedrock-block-states-collision` | per-version bedrock data (#1327) |
 | `deps/bedrock-protocol` | Pix3lPirat3/bedrock-protocol | `fix/nethernet-connectiontype` | protocol + transports |
 | `deps/prismarine-physics` | Pix3lPirat3/prismarine-physics | `feat/bedrock-edition` | bedrock physics |
-| `deps/prismarine-registry` | PR #57 (pin `ae29e1c`) | see note | registry build fix |
+| `deps/prismarine-registry` | mc-zuri/prismarine-registry | `bedrock` | bedrock block-state hash support (#57) |
 
-Two entries need a decision before creation (flagged in `.gitmodules`): **node-minecraft-data** is at a detached commit
-(push it to a named bedrock branch, or pin the commit), and **prismarine-registry** is a PR-#57 head (point at a fetchable
-fork/branch). Everything else tracks a clean branch.
+All submodules track a clean branch on a public fork (ours or mc-zuri's), so `git submodule update --remote` bumps each to
+its branch tip.
 
 ## Setup
 
