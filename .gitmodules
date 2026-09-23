@@ -1,46 +1,37 @@
 # mineflayer-bedrock-integration - submodule spec
 #
-# An experimentation umbrella: each bedrock-related fork/branch as a submodule, pinned so the whole stack is coordinated.
+# An experimentation umbrella: each bedrock-related fork/branch as a submodule, tracked so the whole stack is coordinated.
 # Clone with:  git clone --recurse-submodules <url>   (then: npm run bootstrap)
 # This is NOT a PR target - it is a "frankenstein" integration env combining our + zuri's (+ others') bedrock branches.
-#
-# Bump a submodule to its branch tip (e.g. after zuri pushes to #1327):
-#   git submodule update --remote deps/minecraft-data && npm run bootstrap && git commit -am "bump minecraft-data"
+# Bump to branch tips (e.g. after zuri pushes to #1327):  git submodule update --remote && npm run bootstrap && git commit -am "bump"
 
 [submodule "deps/mineflayer"]
 	path = deps/mineflayer
 	url = https://github.com/Pix3lPirat3/mineflayer.git
 	branch = feat/bedrock-edition-adapter
-
 [submodule "deps/prismarine-chunk"]
 	path = deps/prismarine-chunk
 	url = https://github.com/Pix3lPirat3/prismarine-chunk.git
 	branch = feat/bedrock-1.26-chunks
-
 [submodule "deps/node-minecraft-data"]
 	path = deps/node-minecraft-data
 	url = https://github.com/Pix3lPirat3/node-minecraft-data.git
 	branch = feat/bedrock
-
-[submodule "deps/minecraft-data"]
-	path = deps/minecraft-data
-	url = https://github.com/mc-zuri/minecraft-data.git
-	# zuri's #1327 - "Bedrock data from each server for every version 1.16.201 to 1.26.51". The bootstrap links this into
-	# deps/node-minecraft-data/minecraft-data and regenerates the wrapper index (a plain file swap is not enough).
-	branch = bedrock-block-states-collision
-
 [submodule "deps/bedrock-protocol"]
 	path = deps/bedrock-protocol
 	url = https://github.com/Pix3lPirat3/bedrock-protocol.git
 	branch = fix/nethernet-connectiontype
-
 [submodule "deps/prismarine-physics"]
 	path = deps/prismarine-physics
 	url = https://github.com/Pix3lPirat3/prismarine-physics.git
 	branch = feat/bedrock-edition
-
 [submodule "deps/prismarine-registry"]
 	path = deps/prismarine-registry
-	# zuri's PR #57 - "Add bedrock block state hash support".
 	url = https://github.com/mc-zuri/prismarine-registry.git
 	branch = bedrock
+[submodule "deps/minecraft-data"]
+	path = deps/minecraft-data
+	url = https://github.com/mc-zuri/minecraft-data.git
+	branch = bedrock-block-states-collision
+	# large repo (per-version bedrock data) - clone shallow
+	shallow = true
