@@ -33,5 +33,3 @@
 	path = deps/minecraft-data
 	url = https://github.com/mc-zuri/minecraft-data.git
 	branch = bedrock-block-states-collision
-	# large repo (per-version bedrock data) - clone shallow
-	shallow = true
